@@ -34,3 +34,23 @@ GRANT ALL PRIVILEGES ON wordpress_db.* TO 'wordpress_user'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 ```
+
+### 4. PHP Installation
+- Install PHP and extensions required for WordPress
+```sudo apt install php-fpm php-mysql -y
+```
+
+### 5. WordPress Setup
+- Download and extract WordPress into the Nginx web root
+```
+wget https://wordpress.org/latest.tar.gz
+tar -xzf latest.tar.gz
+sudo mv wordpress /var/www/html/wordpress
+```
+- Set Permissions
+```
+sudo chown -R www-data:www-data /var/www/html/wordpress
+sudo find /var/www/html/wordpress -type d -exec chmod 755 {} \;
+sudo find /var/www/html/wordpress -type f -exec chmod 644 {} \;
+```
+
