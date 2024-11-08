@@ -19,21 +19,11 @@ sudo systemctl enable nginx
 sudo systemctl start nginx
 ```
 
-### 3. Deploy and Configure Database
+### 3. Install MySql
 - Install MySQL, secure the installation.
 ```
 sudo apt install mysql-server -y
 sudo mysql_secure_installation
-```
-
-- Create a dedicated user and database for WordPress
-```
-sudo mysql -u root
-CREATE DATABASE wordpress_db;
-CREATE USER 'wordpress_user'@'localhost' IDENTIFIED BY 'strong_password';
-GRANT ALL PRIVILEGES ON wordpress_db.* TO 'wordpress_user'@'localhost';
-FLUSH PRIVILEGES;
-EXIT;
 ```
 
 ### 4. PHP Installation
@@ -130,22 +120,80 @@ phpinfo();
 http://lamp-stack.ddns.net/info.php
 ```
 
+## 6. Create a dedicated user and database for WordPress
+- Configure Database
+```
+sudo mysql -u root
+CREATE DATABASE wordpress_db;
+CREATE USER 'wordpress_user'@'localhost' IDENTIFIED BY 'Lemp@321';
+GRANT ALL PRIVILEGES ON wordpress_db.* TO 'wordpress_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+- We can test if the new user has the proper permissions by logging in to the MySQL console again
+```
+mysql -u wordpress_user -p
+```
+- Next, we’ll create a test table named todo_list. From the MySQL console
+```
+CREATE TABLE wordpress_db.todo_list (
+	item_id INT AUTO_INCREMENT,
+	content VARCHAR(255),
+	PRIMARY KEY(item_id)
+);
+```
+- Insert a few rows of content in the test table.
+```
+INSERT INTO wordpress_db.todo_list (content) VALUES ("My first important item");
+```
+- To confirm that the data was successfully saved to your table
+```
+SELECT * FROM wordpress_db.todo_list;
+exit
+```
 
-### 6. WordPress Setup
+### 7. Now we can create the PHP script that will connect to MySQL and query for our content. 
+- Create a new PHP file in our custom web root directory using your preferred editor. i’ll use vim for that
+```
+sudo vim /var/www/lamp-stack/todo_list.php
+```
+- The following PHP script connects to the MySQL database and queries for the content of the todo_list table, exhibiting the results in a list. If there’s a problem with the database connection, it will throw an exception. Add the following content to your todo_list.php script:
+```
+<?php
+$user = "wordpress_user";
+$password = "Lemp@321";
+$database = "wordpress_db";
+$table = "todo_list";
+
+try {
+  $db = new PDO("mysql:host=localhost;dbname=$database", $user, $password);
+  echo "<h2>TODO</h2><ol>"; 
+  foreach($db->query("SELECT content FROM $table") as $row) {
+    echo "<li>" . $row['content'] . "</li>";
+  }
+  echo "</ol>";
+} catch (PDOException $e) {
+    print "Error!: " . $e->getMessage() . "<br/>";
+    die();
+}
+```
+
+### 9. WordPress Setup
 - Download and extract WordPress into the Nginx web root
 ```
 wget https://wordpress.org/latest.tar.gz
 tar -xzvf latest.tar.gz
-sudo mv wordpress/* /var/www/devops
+sudo mv wordpress/* /var/www/lamp-stack
 ```
 - Set Permissions
 ```
-sudo chown -R www-data:www-data /var/www/devops/
-sudo find /var/www/devops -type d -exec chmod 755 {} \;
-sudo find /var/www/devops -type f -exec chmod 644 {} \;
+ps -ef | grep nginx
+sudo chown -R www-data:www-data /var/www/lamp-stack/
+sudo find /var/www/lamp-stack -type d -exec chmod 755 {} \;
+sudo find /var/www/lamp-stack -type f -exec chmod 644 {} \;
 ```
 
-### 8. SSL/TLS Configuration
+### 10. SSL/TLS Configuration
 - Install Certbot
 - Obtain SSL certificate from Let’s Encrypt and configure Nginx
 ```
@@ -153,7 +201,7 @@ sudo apt install certbot python3-certbot-nginx -y
 sudo certbot --nginx -d your_domain.com
 ```
 
-### 9. Performance Optimization
+### 11. Performance Optimization
 - Enable Gzip compression in Nginx
 - Configure Nginx for caching static files
 ```
