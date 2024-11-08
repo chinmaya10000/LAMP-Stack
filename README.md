@@ -17,6 +17,7 @@ sudo apt-get update && sudo apt-get upgrade -y
 sudo apt install nginx -y
 sudo systemctl enable nginx
 sudo systemctl start nginx
+```
 
 ### 3. Deploy and Configure Database
 - Install MySQL, secure the installation.
@@ -24,6 +25,7 @@ sudo systemctl start nginx
 sudo apt install mysql-server -y
 sudo mysql_secure_installation
 ```
+
 - Create a dedicated user and database for WordPress
 ```
 sudo mysql -u root
