@@ -1,6 +1,6 @@
-# LAMP Setup with WordPress on AWS VPS (Ubuntu 24.04)
+# LEMP-Stack Setup with WordPress on AWS VPS (Ubuntu 24.04)
 
-This guide provides a step-by-step setup for a LAMP stack (Linux, Nginx, MySQL, PHP) on an Ubuntu 24.04 VPS using AWS. It includes WordPress installation, SSL/TLS with Let’s Encrypt, and server optimizations for performance.
+This guide provides a step-by-step setup for a LEMP stack (Linux, Nginx, MySQL, PHP) on an Ubuntu 22.04 VPS using AWS. It includes WordPress installation, SSL/TLS with Let’s Encrypt, and server optimizations for performance.
 
 ## Steps
 
@@ -17,7 +17,6 @@ sudo apt-get update && sudo apt-get upgrade -y
 sudo apt install nginx -y
 sudo systemctl enable nginx
 sudo systemctl start nginx
-```
 
 ### 3. Deploy and Configure Database
 - Install MySQL, secure the installation.
@@ -38,59 +37,80 @@ EXIT;
 ### 4. PHP Installation
 - Install PHP and extensions required for WordPress
 ```
-sudo apt install php-fpm php-mysql -y
+sudo apt install php8.1-fpm php-mysql
 ```
 
-### 5. WordPress Setup
-- Download and extract WordPress into the Nginx web root
+### 5. Configure Nginx to Use the PHP Processor
+- Create the root web directory
 ```
-wget https://wordpress.org/latest.tar.gz
-tar -xzf latest.tar.gz
-sudo mv wordpress /var/www/html/wordpress
+sudo mkdir /var/www/lamp-stack
 ```
-- Set Permissions
+- Assign ownership of the directory with the $USER environment variable, which will reference your current system user
 ```
-sudo chown -R www-data:www-data /var/www/html/wordpress
-sudo find /var/www/html/wordpress -type d -exec chmod 755 {} \;
-sudo find /var/www/html/wordpress -type f -exec chmod 644 {} \;
+sudo chown -R $USER:$USER /var/www/lamp-stack
 ```
-
-### 6. Configure Nginx for WordPress
-- Configure Nginx for WordPress
+- open a new configuration file in Nginx’s sites-available directory using your preferred command-line editor. Here, i’ll use vim:
 ```
-sudo nano /etc/nginx/sites-available/wordpress
+sudo vim /etc/nginx/sites-available/lamp-stack
 ```
 - Add the following configuration
 ```
 server {
     listen 80;
-    server_name your_domain.com;
-    root /var/www/html/wordpress;
+    server_name your_domain www.your_domain;
+    root /var/www/lamp-stack;
 
-    index index.php index.html index.htm;
+    index index.html index.htm index.php;
 
     location / {
-        try_files $uri $uri/ /index.php?$args;
+        try_files $uri $uri/ =404;
     }
 
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
-    }
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+     }
 
     location ~ /\.ht {
         deny all;
     }
+
 }
 ```
-- Enable the Configuration:
+- Activate your configuration by linking to the configuration file from Nginx’s sites-enabled directory:
 ```
-sudo ln -s /etc/nginx/sites-available/wordpress /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/lamp-stack /etc/nginx/sites-enabled/
+```
+- Unlink the default configuration file from the /sites-enabled/ directory:
+```
+sudo unlink /etc/nginx/sites-enabled/default
+```
+- To ensure there are no syntax errors in the configuration, run:
+```
 sudo nginx -t
+```
+- Reload Nginx to Apply Changes:
+```
 sudo systemctl reload nginx
 ```
 
-### 7. SSL/TLS Configuration
+
+
+### 6. WordPress Setup
+- Download and extract WordPress into the Nginx web root
+```
+wget https://wordpress.org/latest.tar.gz
+tar -xzvf latest.tar.gz
+sudo mv wordpress/* /var/www/devops
+```
+- Set Permissions
+```
+sudo chown -R www-data:www-data /var/www/devops/
+sudo find /var/www/devops -type d -exec chmod 755 {} \;
+sudo find /var/www/devops -type f -exec chmod 644 {} \;
+```
+
+### 8. SSL/TLS Configuration
 - Install Certbot
 - Obtain SSL certificate from Let’s Encrypt and configure Nginx
 ```
@@ -98,7 +118,7 @@ sudo apt install certbot python3-certbot-nginx -y
 sudo certbot --nginx -d your_domain.com
 ```
 
-### 8. Performance Optimization
+### 9. Performance Optimization
 - Enable Gzip compression in Nginx
 - Configure Nginx for caching static files
 ```
@@ -136,18 +156,9 @@ server {
 }
 ```
 
-### 8.Test the Nginx Configuration
-- To ensure there are no syntax errors in the configuration, run:
-```
-sudo nginx -t
-```
-
-### 9.Reload Nginx to Apply Changes:
-```
-sudo systemctl reload nginx
 ``` 
 
-### 10.Test
+### 12.Test
 ```
 https://your_domain.com
 ```
