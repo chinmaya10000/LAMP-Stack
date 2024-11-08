@@ -37,7 +37,8 @@ EXIT;
 
 ### 4. PHP Installation
 - Install PHP and extensions required for WordPress
-```sudo apt install php-fpm php-mysql -y
+```
+sudo apt install php-fpm php-mysql -y
 ```
 
 ### 5. WordPress Setup
