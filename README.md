@@ -59,7 +59,7 @@ sudo vim /etc/nginx/sites-available/lamp-stack
 ```
 server {
     listen 80;
-    server_name your_domain www.your_domain;
+    server_name lamp-stack.ddns.net www.lamp-stack.ddns.net;
     root /var/www/lamp-stack;
 
     index index.html index.htm index.php;
@@ -95,8 +95,36 @@ sudo nginx -t
 ```
 sudo systemctl reload nginx
 ```
+- Our new website is now active, but the web root /var/www/lamp-stack is still empty. Create an index.html file in that location so that we can test that our new server block works as expected:
+```
+sudo vim /var/www/lamp-stack/index.html
+```
+- Include the following content in this file:
+```
+<html>
+  <head>
+    <title>LEMP-Stack website</title>
+  </head>
+  <body>
+    <h1>Hello World!</h1>
 
-
+    <p>This is the landing page of <strong>LEMP Stack</strong>.</p>
+  </body>
+</html>
+```
+- test
+```
+http://lamp-stack.ddns.net
+```
+- We can do this by creating a test PHP file in your document root.
+```
+sudo vim /var/www/lamp-stack/info.php
+```
+- Add the following lines into the new file.
+```
+<?php
+phpinfo();
+```
 
 ### 6. WordPress Setup
 - Download and extract WordPress into the Nginx web root
