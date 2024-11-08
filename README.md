@@ -83,3 +83,10 @@ server {
     }
 }
 ```
+- Enable the Configuration:
+```
+sudo ln -s /etc/nginx/sites-available/wordpress /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
