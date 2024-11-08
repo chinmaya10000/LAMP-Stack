@@ -55,3 +55,31 @@ sudo find /var/www/html/wordpress -type d -exec chmod 755 {} \;
 sudo find /var/www/html/wordpress -type f -exec chmod 644 {} \;
 ```
 
+### 6. Configure Nginx for WordPress
+- Configure Nginx for WordPress
+```
+sudo nano /etc/nginx/sites-available/wordpress
+```
+- Add the following configuration
+```
+server {
+    listen 80;
+    server_name your_domain.com;
+    root /var/www/html/wordpress;
+
+    index index.php index.html index.htm;
+
+    location / {
+        try_files $uri $uri/ /index.php?$args;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+```
