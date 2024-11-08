@@ -41,7 +41,7 @@ sudo mkdir /var/www/lamp-stack
 ```
 sudo chown -R $USER:$USER /var/www/lamp-stack
 ```
-- open a new configuration file in Nginx’s sites-available directory using your preferred command-line editor. Here, i’ll use vim:
+- open a new configuration file in Nginx’s `sites-available` directory using your preferred command-line editor. Here, i’ll use `vim`:
 ```
 sudo vim /etc/nginx/sites-available/lamp-stack
 ```
@@ -69,11 +69,11 @@ server {
 
 }
 ```
-- Activate your configuration by linking to the configuration file from Nginx’s sites-enabled directory:
+- Activate your configuration by linking to the configuration file from Nginx’s `sites-enabled` directory:
 ```
 sudo ln -s /etc/nginx/sites-available/lamp-stack /etc/nginx/sites-enabled/
 ```
-- Unlink the default configuration file from the /sites-enabled/ directory:
+- Unlink the default configuration file from the `/sites-enabled/` directory:
 ```
 sudo unlink /etc/nginx/sites-enabled/default
 ```
@@ -85,7 +85,7 @@ sudo nginx -t
 ```
 sudo systemctl reload nginx
 ```
-- Our new website is now active, but the web root /var/www/lamp-stack is still empty. Create an index.html file in that location so that we can test that our new server block works as expected:
+- Our new website is now active, but the web root `/var/www/lamp-stack` is still empty. Create an `index.html` file in that location so that we can test that our new server block works as expected:
 ```
 sudo vim /var/www/lamp-stack/index.html
 ```
@@ -134,7 +134,7 @@ EXIT;
 ```
 mysql -u wordpress_user -p
 ```
-- Next, we’ll create a test table named todo_list. From the MySQL console
+- Next, we’ll create a test table named `todo_list`. From the `MySQL` console
 ```
 CREATE TABLE wordpress_db.todo_list (
 	item_id INT AUTO_INCREMENT,
@@ -157,7 +157,7 @@ exit
 ```
 sudo vim /var/www/lamp-stack/todo_list.php
 ```
-- The following PHP script connects to the MySQL database and queries for the content of the todo_list table, exhibiting the results in a list. If there’s a problem with the database connection, it will throw an exception. Add the following content to your todo_list.php script:
+- The following PHP script connects to the MySQL database and queries for the content of the `todo_list` table, exhibiting the results in a list. If there’s a problem with the database connection, it will throw an exception. Add the following content to your `todo_list.php` script:
 ```
 <?php
 $user = "wordpress_user";
