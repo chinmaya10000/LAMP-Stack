@@ -37,7 +37,7 @@ sudo apt install php8.1-fpm php-mysql
 ```
 sudo mkdir /var/www/lamp-stack
 ```
-- Assign ownership of the directory with the $USER environment variable, which will reference your current system user
+- Assign ownership of the directory with the `$USER` environment variable, which will reference your current system user
 ```
 sudo chown -R $USER:$USER /var/www/lamp-stack
 ```
@@ -189,8 +189,6 @@ sudo mv wordpress/* /var/www/lamp-stack
 ```
 ps -ef | grep nginx
 sudo chown -R www-data:www-data /var/www/lamp-stack/
-sudo find /var/www/lamp-stack -type d -exec chmod 755 {} \;
-sudo find /var/www/lamp-stack -type f -exec chmod 644 {} \;
 ```
 
 ### 10. SSL/TLS Configuration
@@ -211,8 +209,8 @@ sudo nano /etc/nginx/nginx.conf
 ```
 server {
     listen 80;
-    server_name your_domain.com;
-    root /var/www/html/wordpress;
+    server_name lamp-stack.ddns.net;
+    root /var/www/lamp-stack;
     index index.php index.html index.htm;
 
     location / {
@@ -239,11 +237,9 @@ server {
 }
 ```
 
-``` 
-
 ### 12.Test
 ```
-https://your_domain.com
+https://lamp-stack.ddns.net
 ```
 
 ### Additional Security and Best Practices
