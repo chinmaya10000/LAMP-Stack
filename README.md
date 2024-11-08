@@ -125,6 +125,11 @@ sudo vim /var/www/lamp-stack/info.php
 <?php
 phpinfo();
 ```
+- Test 
+```
+http://lamp-stack.ddns.net/info.php
+```
+
 
 ### 6. WordPress Setup
 - Download and extract WordPress into the Nginx web root
