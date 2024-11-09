@@ -18,14 +18,16 @@ sudo systemctl enable nginx
 sudo systemctl start nginx
 sudo systemctl status nginx
 ```
+- If firewall is active/going to enable we need to allow `NGINX` with firewall we using here `ufw`.
+```
+sudo ufw app list
+sudo ufw allow 'Nginx HTTP'
+sudo ufw allow 'Nginx HTTPS'
+sudo ufw allow ssh
+sudo ufw status
+sudo ufw enable
+```
 
-### 2. Nginx Installation
-- Install and start Nginx
-```
-sudo apt install nginx -y
-sudo systemctl enable nginx
-sudo systemctl start nginx
-```
 
 ### 3. Install MySql
 - Install MySQL, secure the installation.
