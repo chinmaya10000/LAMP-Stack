@@ -26,23 +26,25 @@ sudo ufw allow 'Nginx HTTPS'
 sudo ufw allow ssh
 sudo ufw status
 sudo ufw enable
+sudo systemctl restart nginx
 ```
-
-
-### 3. Install MySql
-- Install MySQL, secure the installation.
+- Visit public ip to see nginx welcome page :
 ```
-sudo apt install mysql-server -y
+http://your_serverip
+```
+- Install and configure mysql server :
+```
+sudo apt install mysql-server 
 sudo mysql_secure_installation
+sudo systemctl restart mysql
+sudo systemctl enable mysql
+```
+- Install and setup PHP :
+```
+sudo apt install php8.1-fpm php-mysql -y 
 ```
 
-### 4. PHP Installation
-- Install PHP and extensions required for WordPress
-```
-sudo apt install php8.1-fpm php-mysql
-```
-
-### 5. Configure Nginx to Use the PHP Processor
+### 3. Configure Nginx to Use the PHP Processor
 - Create the root web directory
 ```
 sudo mkdir /var/www/lemp-stack
@@ -58,25 +60,64 @@ sudo vim /etc/nginx/sites-available/lemp-stack
 - Add the following configuration
 ```
 server {
-    listen 80;
-    server_name lamp-stack.ddns.net www.lamp-stack.ddns.net;
-    root /var/www/lemp-stack;
+        listen 80;
 
-    index index.html index.htm index.php;
+        root /var/www/lemp-stack;
+        index index.php index.html index.htm;
 
-    location / {
-        try_files $uri $uri/ =404;
-    }
+        server_name lamp-stack.ddns.net;
 
-    location ~ \.php$ {
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
-     }
+        location = /50x.html {
+                root /usr/share/nginx/html;
+        }
+location / {
+                # try_files $uri $uri/ =404;
+                try_files $uri $uri/ /index.php?q=$uri&$args;
+        }
 
-    location ~ /\.ht {
+        location ~ \.php$ {
+                try_files $uri =404;
+                fastcgi_split_path_info ^(.+\.php)(/.+)$;
+                fastcgi_pass unix:/run/php/php7.2-fpm.sock;
+                fastcgi_index index.php;
+                fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                include fastcgi_params;
+        }
+
+location = /favicon.ico {
+        access_log off;
+        log_not_found off;
+        expires max;
+}
+location = /robots.txt {
+        access_log off;
+        log_not_found off;
+}
+
+# Cache Static Files For As Long As Possible
+location ~*
+\.(ogg|ogv|svg|svgz|eot|otf|woff|mp4|ttf|css|rss|atom|js|jpg|jpeg|gif|png|ico|zip|tgz|gz|rar|bz2|doc|xls|exe|ppt|tar|mid|midi|wav|bmp|rtf)$
+{
+        access_log off;
+        log_not_found off;
+        expires max;
+}
+# Security Settings For Better Privacy Deny Hidden Files
+location ~ /\. {
         deny all;
-    }
-
+        access_log off;
+        log_not_found off;
+}
+# Return 403 Forbidden For readme.(txt|html) or license.(txt|html)
+if ($request_uri ~* "^.+(readme|license)\.(txt|html)$") {
+    return 403;
+}
+# Disallow PHP In Upload Folder
+location /wp-content/uploads/ {
+        location ~ \.php$ {
+                deny all;
+        }
+}
 }
 ```
 - Activate your configuration by linking to the configuration file from Nginx’s `sites-enabled` directory:
@@ -130,7 +171,7 @@ phpinfo();
 http://lamp-stack.ddns.net/info.php
 ```
 
-## 6. Create a dedicated user and database for WordPress
+## 4. Create a dedicated user and database for WordPress
 - Configure Database
 ```
 sudo mysql -u root
@@ -162,7 +203,7 @@ SELECT * FROM wordpress_db.todo_list;
 exit
 ```
 
-### 7. Now we can create the PHP script that will connect to MySQL and query for our content. 
+### 5. Now we can create the PHP script that will connect to MySQL and query for our content. 
 - Create a new PHP file in our custom web root directory using your preferred editor. i’ll use vim for that
 ```
 sudo vim /var/www/lemp-stack/todo_list.php
@@ -188,7 +229,7 @@ try {
 }
 ```
 
-### 9. WordPress Setup
+### 6. WordPress Setup
 - Download and extract WordPress into the Nginx web root
 ```
 wget https://wordpress.org/latest.tar.gz
@@ -201,7 +242,7 @@ ps -ef | grep nginx
 sudo chown -R www-data:www-data /var/www/lemp-stack/
 ```
 
-### 10. SSL/TLS Configuration
+### 7. SSL/TLS Configuration
 - Install Certbot
 - Obtain SSL certificate from Let’s Encrypt and configure Nginx
 ```
@@ -209,7 +250,7 @@ sudo apt install certbot python3-certbot-nginx -y
 sudo certbot --nginx -d your_domain.com
 ```
 
-### 11. Performance Optimization
+### 8. Performance Optimization
 - Enable Gzip compression in Nginx
 - Configure Nginx for caching static files
 ```
@@ -247,7 +288,7 @@ server {
 }
 ```
 
-### 12.Test
+### 9.Test
 ```
 https://lamp-stack.ddns.net
 ```
