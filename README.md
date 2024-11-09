@@ -3,12 +3,20 @@ To set up an automated deployment process for a WordPress website using Nginx as
 
 ## Steps
 
-### 1. 🛠️ Server Provisioning
-### 1. Server Initialization
-- SSH into the VPS
-- Update system packages
+### 1. Server Provisioning
+- I am using AWS as the Cloud Provider
+- Provision an EC2 instance on AWS with a secure Linux distribution (e.g., Ubuntu 24.04).
+- Configure security groups to allow necessary incoming traffic and restrict unnecessary access.
+- Generate and configure SSH key pairs for secure remote acces.
+
+### 2. Nginx, MySQL/MariaDB, and PHP Setup
+- Install and configure Nginx as the web server.
 ```
-sudo apt-get update && sudo apt-get upgrade -y
+sudo apt-get update -y
+sudo apt install nginx -y
+sudo systemctl enable nginx
+sudo systemctl start nginx
+sudo systemctl status nginx
 ```
 
 ### 2. Nginx Installation
