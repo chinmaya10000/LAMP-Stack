@@ -44,7 +44,7 @@ sudo systemctl enable mysql
 sudo apt install php8.1-fpm php-mysql -y 
 ```
 
-### 3. Configure Nginx to Use the PHP Processor
+### 3. Configure Nginx
 - Create the root web directory
 ```
 sudo mkdir /var/www/lemp-stack
@@ -242,15 +242,7 @@ ps -ef | grep nginx
 sudo chown -R www-data:www-data /var/www/lemp-stack/
 ```
 
-### 7. SSL/TLS Configuration
-- Install Certbot
-- Obtain SSL certificate from Let’s Encrypt and configure Nginx
-```
-sudo apt install certbot python3-certbot-nginx -y
-sudo certbot --nginx -d your_domain.com
-```
-
-### 8. Performance Optimization
+### 7. Performance Optimization
 - Enable Gzip compression in Nginx
 - Configure Nginx for caching static files
 ```
@@ -287,11 +279,44 @@ server {
     gzip_vary on;
 }
 ```
+- Restart the server:
+```
+sudo systemctl restart nginx
+```
+
+### 8. SSL/TLS Configuration
+- Install Certbot
+- Obtain SSL certificate from Let’s Encrypt and configure Nginx
+```
+sudo apt install certbot python3-certbot-nginx -y
+sudo certbot --nginx -d your_domain.com
+```
+
 
 ### 9.Test
 ```
 https://lamp-stack.ddns.net
 ```
+
+# GitHub Repository Setup
+- Create a GitHub repository for this project.
+- Go to repository >> Settings >>Actions secrets and variables >> add below secrets
+```
+HOST: The hostname or IP address of the production server.
+USERNANE: ubuntu
+SSH_PRIVATE_KEY : Private key of your server
+```
+- Link to Your GitHub Repository: Go back to GitHub, and find the URL for the repository. Link the local repository to GitHub by following the instructions on the GitHub website.
+```
+cd /var/www/lemp-stack
+git init
+git remote add origin  https://github.com/chinmaya10000/LAMP-Stack.git
+git add .
+git branch -M master
+git push -u origin master
+```
+- files pushed from the ec2 instances to the git repository
+- The WordPress site should now be running on the server, and the code is version-controlled in the GitHub repository. we can push updates to GitHub whenever we make changes to our site.
 
 ### Additional Security and Best Practices
 - Use strong passwords for all services
