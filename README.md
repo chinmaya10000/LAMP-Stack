@@ -1,9 +1,9 @@
-# LEMP-Stack Setup with WordPress on AWS VPS (Ubuntu 22.04)
-
-This guide provides a step-by-step setup for a LEMP stack (Linux, Nginx, MySQL, PHP) on an Ubuntu 22.04 VPS using AWS. It includes WordPress installation, SSL/TLS with Let’s Encrypt, and server optimizations for performance.
+# Automated WordPress Deployment with Nginx, LEMP Stack, and GitHubActions
+To set up an automated deployment process for a WordPress website using Nginx as the web server, LEMP (Linux, Nginx, MySQL, PHP) stack, and GitHub Actions as the CI/CD automation tool.This GitHub Actions workflow automates the continuous integration and deployment (CI/CD) process. while following best practices for security, performance, and automation.
 
 ## Steps
 
+### 1. 🛠️ Server Provisioning
 ### 1. Server Initialization
 - SSH into the VPS
 - Update system packages
