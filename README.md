@@ -1,4 +1,4 @@
-# LEMP-Stack Setup with WordPress on AWS VPS (Ubuntu 24.04)
+# LEMP-Stack Setup with WordPress on AWS VPS (Ubuntu 22.04)
 
 This guide provides a step-by-step setup for a LEMP stack (Linux, Nginx, MySQL, PHP) on an Ubuntu 22.04 VPS using AWS. It includes WordPress installation, SSL/TLS with Let’s Encrypt, and server optimizations for performance.
 
@@ -35,22 +35,22 @@ sudo apt install php8.1-fpm php-mysql
 ### 5. Configure Nginx to Use the PHP Processor
 - Create the root web directory
 ```
-sudo mkdir /var/www/lamp-stack
+sudo mkdir /var/www/lemp-stack
 ```
 - Assign ownership of the directory with the `$USER` environment variable, which will reference your current system user
 ```
-sudo chown -R $USER:$USER /var/www/lamp-stack
+sudo chown -R $USER:$USER /var/www/lemp-stack
 ```
 - open a new configuration file in Nginx’s `sites-available` directory using your preferred command-line editor. Here, i’ll use `vim`:
 ```
-sudo vim /etc/nginx/sites-available/lamp-stack
+sudo vim /etc/nginx/sites-available/lemp-stack
 ```
 - Add the following configuration
 ```
 server {
     listen 80;
     server_name lamp-stack.ddns.net www.lamp-stack.ddns.net;
-    root /var/www/lamp-stack;
+    root /var/www/lemp-stack;
 
     index index.html index.htm index.php;
 
@@ -71,7 +71,7 @@ server {
 ```
 - Activate your configuration by linking to the configuration file from Nginx’s `sites-enabled` directory:
 ```
-sudo ln -s /etc/nginx/sites-available/lamp-stack /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/lemp-stack /etc/nginx/sites-enabled/
 ```
 - Unlink the default configuration file from the `/sites-enabled/` directory:
 ```
@@ -87,7 +87,7 @@ sudo systemctl reload nginx
 ```
 - Our new website is now active, but the web root `/var/www/lamp-stack` is still empty. Create an `index.html` file in that location so that we can test that our new server block works as expected:
 ```
-sudo vim /var/www/lamp-stack/index.html
+sudo vim /var/www/lemp-stack/index.html
 ```
 - Include the following content in this file:
 ```
@@ -108,7 +108,7 @@ http://lamp-stack.ddns.net
 ```
 - We can do this by creating a test PHP file in your document root.
 ```
-sudo vim /var/www/lamp-stack/info.php
+sudo vim /var/www/lemp-stack/info.php
 ```
 - Add the following lines into the new file.
 ```
@@ -155,7 +155,7 @@ exit
 ### 7. Now we can create the PHP script that will connect to MySQL and query for our content. 
 - Create a new PHP file in our custom web root directory using your preferred editor. i’ll use vim for that
 ```
-sudo vim /var/www/lamp-stack/todo_list.php
+sudo vim /var/www/lemp-stack/todo_list.php
 ```
 - The following PHP script connects to the MySQL database and queries for the content of the `todo_list` table, exhibiting the results in a list. If there’s a problem with the database connection, it will throw an exception. Add the following content to your `todo_list.php` script:
 ```
@@ -188,7 +188,7 @@ sudo mv wordpress/* /var/www/lamp-stack
 - Set Permissions
 ```
 ps -ef | grep nginx
-sudo chown -R www-data:www-data /var/www/lamp-stack/
+sudo chown -R www-data:www-data /var/www/lemp-stack/
 ```
 
 ### 10. SSL/TLS Configuration
