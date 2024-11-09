@@ -41,7 +41,11 @@ sudo systemctl enable mysql
 ```
 - Install and setup PHP :
 ```
-sudo apt install php8.1-fpm php-mysql -y 
+sudo apt install php-fpm php-mysql php php-curl php-gd php-intl php-zip 
+sudo add-apt-repository ppa:ondrej/php
+sudo apt-get install php7.4-fpm
+sudo systemctl enable php7.4-fpm
+sudo systemctl start php7.4-fpm
 ```
 
 ### 3. Configure Nginx
@@ -60,64 +64,24 @@ sudo vim /etc/nginx/sites-available/lemp-stack
 - Add the following configuration
 ```
 server {
-        listen 80;
+    listen 80;
+    server_name lamp-stack.ddns.net www.lamp-stack.ddns.net;
+    root /var/www/your_domain;
 
-        root /var/www/lemp-stack;
-        index index.php index.html index.htm;
+    index index.html index.htm index.php;
 
-        server_name lamp-stack.ddns.net;
+    location / {
+        try_files $uri $uri/ =404;
+    }
 
-        location = /50x.html {
-                root /usr/share/nginx/html;
-        }
-location / {
-                # try_files $uri $uri/ =404;
-                try_files $uri $uri/ /index.php?q=$uri&$args;
-        }
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;
+     }
 
-        location ~ \.php$ {
-                try_files $uri =404;
-                fastcgi_split_path_info ^(.+\.php)(/.+)$;
-                fastcgi_pass unix:/run/php/php7.2-fpm.sock;
-                fastcgi_index index.php;
-                fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-                include fastcgi_params;
-        }
-
-location = /favicon.ico {
-        access_log off;
-        log_not_found off;
-        expires max;
-}
-location = /robots.txt {
-        access_log off;
-        log_not_found off;
-}
-
-# Cache Static Files For As Long As Possible
-location ~*
-\.(ogg|ogv|svg|svgz|eot|otf|woff|mp4|ttf|css|rss|atom|js|jpg|jpeg|gif|png|ico|zip|tgz|gz|rar|bz2|doc|xls|exe|ppt|tar|mid|midi|wav|bmp|rtf)$
-{
-        access_log off;
-        log_not_found off;
-        expires max;
-}
-# Security Settings For Better Privacy Deny Hidden Files
-location ~ /\. {
+    location ~ /\.ht {
         deny all;
-        access_log off;
-        log_not_found off;
-}
-# Return 403 Forbidden For readme.(txt|html) or license.(txt|html)
-if ($request_uri ~* "^.+(readme|license)\.(txt|html)$") {
-    return 403;
-}
-# Disallow PHP In Upload Folder
-location /wp-content/uploads/ {
-        location ~ \.php$ {
-                deny all;
-        }
-}
+    }
 }
 ```
 - Activate your configuration by linking to the configuration file from Nginx’s `sites-enabled` directory:
@@ -298,25 +262,69 @@ sudo certbot --nginx -d your_domain.com
 https://lamp-stack.ddns.net
 ```
 
-# GitHub Repository Setup
-- Create a GitHub repository for this project.
+# GitHub Actions Workflow
+This workflow is designed to be super-easy to integrate into your own WordPress project or any other PHP-based project. It’s designed to ensure code quality and deploy changes to both staging and production environments from the master branch.
+
+## Steps
+
+### 1. Create a GitHub repository
 - Go to repository >> Settings >>Actions secrets and variables >> add below secrets
 ```
 HOST: The hostname or IP address of the production server.
 USERNANE: ubuntu
-SSH_PRIVATE_KEY : Private key of your server
+SSH_PRIVATE_KEY : private key of your server
 ```
-- Link to Your GitHub Repository: Go back to GitHub, and find the URL for the repository. Link the local repository to GitHub by following the instructions on the GitHub website.
+
+### 2. GitHub Actions Workflow
+- clikc on actions button on our git repo, click on set up a workflow yourself button. create a `main.yaml` file
+- this deployment file i am trying to build themes by installing dependacies and building then after that i am syncing the directory with rsync utility to sych with my wordpress site location files and send securly.
 ```
-cd /var/www/lemp-stack
-git init
-git remote add origin  https://github.com/chinmaya10000/LAMP-Stack.git
-git add .
-git branch -M master
-git push -u origin master
+name: Push Code to EC2
+
+on:
+ push:
+   branches:
+     - main
+jobs:
+ push_to_ec2:
+   runs-on: ubuntu-latest
+   steps:
+     - name: Checkout Repository
+       uses: actions/checkout@v2
+     - name: Set up SSH
+       uses: webfactory/ssh-agent@v0.8.0
+       with:
+         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+     - name: Install dependencies
+       run: |
+         # Add your commands to install project dependencies
+         # For example, if you are using Node.js:
+         # npm install
+     - name: Build the project
+       run: |
+         # Add your commands to build the project
+         # For example, if you are using Node.js:
+         # npm run build
+     - name: Install rsync
+       run: sudo apt-get update && sudo apt-get install -y rsync
+     - name: Add EC2 instance host key to known hosts
+       run: |
+         ssh-keyscan -H $HOST >> $HOME/.ssh/known_hosts
+       env:
+         HOST: ${{ secrets.HOST }}
+     - name: Push code to EC2
+       run: |
+         # Set IP address and directory paths
+         EC2_IP="$HOST"
+         SOURCE_DIR="$GITHUB_WORKSPACE/"
+         DEST_DIR="/var/www/lemp-stack/wordpress/"
+         # Use rsync with SSH key authentication and compression
+         rsync -avz --delete-after --exclude='.git' -e "ssh -i $SSH_AUTH_SOCK" "$SOURCE_DIR" "${{ secrets.USERNAME }}@$EC2_IP:$DEST_DIR"
+       env:
+         HOST: ${{ secrets.HOST }}
+         USERNAME: ${{ secrets.USERNAME }}
+         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
 ```
-- files pushed from the ec2 instances to the git repository
-- The WordPress site should now be running on the server, and the code is version-controlled in the GitHub repository. we can push updates to GitHub whenever we make changes to our site.
 
 ### Additional Security and Best Practices
 - Use strong passwords for all services
