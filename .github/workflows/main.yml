@@ -1,0 +1,45 @@
+name: Push Code to EC2
+
+on:
+ push:
+   branches:
+     - main
+jobs:
+ push_to_ec2:
+   runs-on: ubuntu-latest
+   steps:
+     - name: Checkout Repository
+       uses: actions/checkout@v2
+     - name: Set up SSH
+       uses: webfactory/ssh-agent@v0.8.0
+       with:
+         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+     - name: Install dependencies
+       run: |
+         # Add your commands to install project dependencies
+         # For example, if you are using Node.js:
+         # npm install
+     - name: Build the project
+       run: |
+         # Add your commands to build the project
+         # For example, if you are using Node.js:
+         # npm run build
+     - name: Install rsync
+       run: sudo apt-get update && sudo apt-get install -y rsync
+     - name: Add EC2 instance host key to known hosts
+       run: |
+         ssh-keyscan -H $HOST >> $HOME/.ssh/known_hosts
+       env:
+         HOST: ${{ secrets.HOST }}
+     - name: Push code to EC2
+       run: |
+         # Set IP address and directory paths
+         EC2_IP="$HOST"
+         SOURCE_DIR="$GITHUB_WORKSPACE/"
+         DEST_DIR="/var/www/lemp-stack/wordpress/"
+         # Use rsync with SSH key authentication and compression
+         rsync -avz --delete-after --exclude='.git' -e "ssh -i $SSH_AUTH_SOCK" "$SOURCE_DIR" "${{ secrets.USERNAME }}@$EC2_IP:$DEST_DIR"
+       env:
+         HOST: ${{ secrets.HOST }}
+         USERNAME: ${{ secrets.USERNAME }}
+         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}

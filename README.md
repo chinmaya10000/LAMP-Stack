@@ -284,7 +284,7 @@ name: Push Code to EC2
 on:
  push:
    branches:
-     - main
+     - master
 jobs:
  push_to_ec2:
    runs-on: ubuntu-latest
