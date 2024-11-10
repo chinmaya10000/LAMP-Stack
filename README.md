@@ -369,14 +369,14 @@ Before running the GitHub Actions workflow, you need to set up your database. SS
 ## GitHub Actions Setup
 - Go to your repository Settings > Secrets and Variables > Actions
 - Add the following secrets:
-```bash
+```
 EC2_SSH_KEY: Your EC2 instance's private SSH key
 EC2_IP: Your EC2 instance's public IP address
 DB_NAME: WordPress database name (e.g., wordpress)
 DB_USER: Database username (e.g., wordpressuser)
 DB_PASSWORD: Database password (the one you set during database creation)
 DB_HOST: Database host (use 'localhost' if database is on the same server)
-
+```
 
 And here's the updated workflow file (.github/workflows/main.yml):
 
@@ -515,7 +515,7 @@ jobs:
           curl -I http://${{ secrets.EC2_IP }}
 
 
-### Additional Security and Best Practices
+## Additional Security and Best Practices
 - Use strong passwords for all services
 - Grant minimal privileges for the WordPress MySQL user
 - Keep software up-to-date
