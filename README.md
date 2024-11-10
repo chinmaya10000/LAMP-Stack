@@ -159,6 +159,7 @@ location = /favicon.ico {
   }
 }
 ```
+### 4. Enable Gzip
 - Enable Gzip compression in Nginx
 ```
 sudo vim /etc/nginx/nginx.conf 
@@ -238,7 +239,7 @@ sudo nginx -t
 ```
 sudo systemctl reload nginx
 ```
-- Our new website is now active, but the web root `/var/www/lemp-stack/wordpress/public_html` is still empty. Create an index.html file in that location so that we can test that our new server block works as expected:
+- Our new website is now active, but the web root `/var/www/lemp-stack/wordpress/public_html` is still empty. Create an `index.html` file in that location so that we can test that our new server block works as expected:
 ```
 sudo vim /var/www/lemp-stack/wordpress/public_html/index.html
 ```
@@ -273,7 +274,7 @@ phpinfo();
 http://lamp-stack.ddns.net/info.php
 ```
 
-## 4. Install and configure mysqldb
+## 5. Install and configure mysqldb
 - Install mysql 
 ```
 sudo apt install mysql-server -y
@@ -290,7 +291,7 @@ FLUSH PRIVILEGES;
 EXIT;
 ```
 
-### 5. WordPress Setup
+### 6. WordPress Setup
 - Download and extract WordPress into the Nginx web root
 ```
 cd /var/www/lemp-stack/wordpress/public_html
@@ -313,7 +314,7 @@ sudo systemctl restart php8.2-fpm.service
 sudo systemctl restart mysql
 ```
 
-### 6. SSL/TLS Configuration
+### 7. SSL/TLS Configuration
 - Install Certbot
 - Obtain SSL certificate from Let’s Encrypt and configure Nginx
 ```
@@ -322,7 +323,7 @@ sudo certbot --nginx -d your_domain.com
 ```
 
 
-### 7.Test
+### 8.Test
 ```
 https://lamp-stack.ddns.net
 ```
