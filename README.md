@@ -32,13 +32,6 @@ sudo systemctl restart nginx
 ```
 http://your_serverip
 ```
-- Install and configure mysql server :
-```
-sudo apt install mysql-server 
-sudo mysql_secure_installation
-sudo systemctl restart mysql
-sudo systemctl enable mysql
-```
 - Install and setup PHP :
 ```
 sudo add-apt-repository ppa:ondrej/php
@@ -66,6 +59,7 @@ rm /etc/nginx/sites-enabled/default
 ```
 sudo mkdir /var/www/lemp-stack/
 cd /var/www/lemp-stack/
+mkdir mkdir cache
 sudo mkdir wordpress
 cd public_html
 ```
@@ -79,7 +73,7 @@ sudo vim /etc/nginx/sites-available/lemp-stack
 ```
 - Add the following configuration
 ```
-fastcgi_cache_path /var/www/example.com/cache levels=1:2 keys_zone=example.com:100m inactive=60m;
+fastcgi_cache_path /var/www/lemp-stack/cache levels=1:2 keys_zone=example.com:100m inactive=60m;
 
 server {
   listen 80;
@@ -244,9 +238,9 @@ sudo nginx -t
 ```
 sudo systemctl reload nginx
 ```
-- Our new website is now active, but the web root `/var/www/lamp-stack` is still empty. Create an `index.html` file in that location so that we can test that our new server block works as expected:
+- Our new website is now active, but the web root `/var/www/lemp-stack/wordpress/public_html` is still empty. Create an index.html file in that location so that we can test that our new server block works as expected:
 ```
-sudo vim /var/www/lemp-stack/index.html
+sudo vim /var/www/lemp-stack/wordpress/public_html/index.html
 ```
 - Include the following content in this file:
 ```
@@ -279,7 +273,13 @@ phpinfo();
 http://lamp-stack.ddns.net/info.php
 ```
 
-## 4. Create a dedicated user and database for WordPress
+## 4. Install and configure mysqldb
+- Install mysql 
+```
+sudo apt install mysql-server -y
+sudo mysql_secure_installation
+```
+
 - Configure Database
 ```
 sudo mysql -u root
@@ -289,110 +289,31 @@ GRANT ALL PRIVILEGES ON wordpress_db.* TO 'wordpress_user'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 ```
-- We can test if the new user has the proper permissions by logging in to the MySQL console again
-```
-mysql -u wordpress_user -p
-```
-- Next, we’ll create a test table named `todo_list`. From the `MySQL` console
-```
-CREATE TABLE wordpress_db.todo_list (
-	item_id INT AUTO_INCREMENT,
-	content VARCHAR(255),
-	PRIMARY KEY(item_id)
-);
-```
-- Insert a few rows of content in the test table.
-```
-INSERT INTO wordpress_db.todo_list (content) VALUES ("My first important item");
-```
-- To confirm that the data was successfully saved to your table
-```
-SELECT * FROM wordpress_db.todo_list;
-exit
-```
 
-### 5. Now we can create the PHP script that will connect to MySQL and query for our content. 
-- Create a new PHP file in our custom web root directory using your preferred editor. i’ll use vim for that
-```
-sudo vim /var/www/lemp-stack/todo_list.php
-```
-- The following PHP script connects to the MySQL database and queries for the content of the `todo_list` table, exhibiting the results in a list. If there’s a problem with the database connection, it will throw an exception. Add the following content to your `todo_list.php` script:
-```
-<?php
-$user = "wordpress_user";
-$password = "Lemp@321";
-$database = "wordpress_db";
-$table = "todo_list";
-
-try {
-  $db = new PDO("mysql:host=localhost;dbname=$database", $user, $password);
-  echo "<h2>TODO</h2><ol>"; 
-  foreach($db->query("SELECT content FROM $table") as $row) {
-    echo "<li>" . $row['content'] . "</li>";
-  }
-  echo "</ol>";
-} catch (PDOException $e) {
-    print "Error!: " . $e->getMessage() . "<br/>";
-    die();
-}
-```
-
-### 6. WordPress Setup
+### 5. WordPress Setup
 - Download and extract WordPress into the Nginx web root
 ```
+cd /var/www/lemp-stack/wordpress/public_html
 wget https://wordpress.org/latest.tar.gz
 tar -xzvf latest.tar.gz
-sudo mv wordpress/* /var/www/lamp-stack
+sudo mv -v wordpress/* /var/www/lemp-stack/wordpress/public_html
+rmdir wordpress
+rm latest.tar.gz
 ```
 - Set Permissions
 ```
-ps -ef | grep nginx
-sudo chown -R www-data:www-data /var/www/lemp-stack/
-```
-
-### 7. Performance Optimization
-- Enable Gzip compression in Nginx
-- Configure Nginx for caching static files
-```
-sudo nano /etc/nginx/nginx.conf
-```
-- Add the following lines in the http block:
-```
-server {
-    listen 80;
-    server_name lamp-stack.ddns.net;
-    root /var/www/lamp-stack;
-    index index.php index.html index.htm;
-
-    location / {
-        try_files $uri $uri/ /index.php?$args;
-    }
-
-    location ~ \.php$ {
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
-    }
-
-    # Static file caching
-    location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
-        expires 30d;
-        access_log off;
-    }
-
-    # Enable Gzip compression
-    gzip on;
-    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
-    gzip_min_length 1000;
-    gzip_proxied any;
-    gzip_vary on;
-}
+sudo chown -R www-data:www-data /var/www/
+sudo find /var/www/ -type d -exec chmod 755 {} \;
+sudo find /var/www/ -type f -exec chmod 644 {} \;
 ```
 - Restart the server:
 ```
 sudo systemctl restart nginx
+sudo systemctl restart php8.2-fpm.service
+sudo systemctl restart mysql
 ```
 
-### 8. SSL/TLS Configuration
+### 6. SSL/TLS Configuration
 - Install Certbot
 - Obtain SSL certificate from Let’s Encrypt and configure Nginx
 ```
@@ -401,7 +322,7 @@ sudo certbot --nginx -d your_domain.com
 ```
 
 
-### 9.Test
+### 7.Test
 ```
 https://lamp-stack.ddns.net
 ```
