@@ -1,45 +1,123 @@
-name: Push Code to EC2
+name: Deploy WordPress LEMP Stack
 
 on:
- push:
-   branches:
-     - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
 jobs:
- push_to_ec2:
-   runs-on: ubuntu-latest
-   steps:
-     - name: Checkout Repository
-       uses: actions/checkout@v2
-     - name: Set up SSH
-       uses: webfactory/ssh-agent@v0.8.0
-       with:
-         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-     - name: Install dependencies
-       run: |
-         # Add your commands to install project dependencies
-         # For example, if you are using Node.js:
-         # npm install
-     - name: Build the project
-       run: |
-         # Add your commands to build the project
-         # For example, if you are using Node.js:
-         # npm run build
-     - name: Install rsync
-       run: sudo apt-get update && sudo apt-get install -y rsync
-     - name: Add EC2 instance host key to known hosts
-       run: |
-         ssh-keyscan -H $HOST >> $HOME/.ssh/known_hosts
-       env:
-         HOST: ${{ secrets.HOST }}
-     - name: Push code to EC2
-       run: |
-         # Set IP address and directory paths
-         EC2_IP="$HOST"
-         SOURCE_DIR="$GITHUB_WORKSPACE/"
-         DEST_DIR="/var/www/lemp-stack/wordpress/"
-         # Use rsync with SSH key authentication and compression
-         rsync -avz --delete-after --exclude='.git' -e "ssh -i $SSH_AUTH_SOCK" "$SOURCE_DIR" "${{ secrets.USERNAME }}@$EC2_IP:$DEST_DIR"
-       env:
-         HOST: ${{ secrets.HOST }}
-         USERNAME: ${{ secrets.USERNAME }}
-         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Add EC2 to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.EC2_IP }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to EC2
+        env:
+          EC2_IP: ${{ secrets.EC2_IP }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+        run: |
+          ssh ubuntu@$EC2_IP << 'ENDSSH'
+            # Update system packages
+            sudo apt update
+            sudo apt install -y nginx php-fpm php-mysql php-curl php-gd php-intl php-mbstring php-soap php-xml php-xmlrpc php-zip
+
+            # Create web root directory if it doesn't exist
+            sudo mkdir -p /var/www/lemp-stack/wordpress/public_html
+
+            # Download and setup WordPress
+            cd /var/www/lemp-stack/wordpress/public_html
+            if [ ! -d wordpress ]; then
+              sudo wget https://wordpress.org/latest.tar.gz
+              sudo tar -xzf latest.tar.gz
+              sudo rm latest.tar.gz
+            fi
+
+            # Configure wp-config.php
+            cd wordpress
+            if [ ! -f wp-config.php ]; then
+              sudo cp wp-config-sample.php wp-config.php
+              sudo sed -i "s/database_name_here/${DB_NAME}/" wp-config.php
+              sudo sed -i "s/username_here/${DB_USER}/" wp-config.php
+              sudo sed -i "s/password_here/${DB_PASSWORD}/" wp-config.php
+              sudo sed -i "s/localhost/${DB_HOST}/" wp-config.php
+              
+              # Add WordPress salts
+              SALTS=$(curl -s https://api.wordpress.org/secret-key/1.1/salt/)
+              sudo sed -i "/#@-/,/#@+/c\\$SALTS" wp-config.php
+            fi
+
+            # Set correct permissions
+            sudo chown -R www-data:www-data /var/www/
+            sudo find /var/www/ -type d -exec chmod 755 {} \;
+            sudo find /var/www/ -type f -exec chmod 644 {} \;
+
+            # Configure Nginx
+            sudo tee /etc/nginx/sites-available/wordpress << 'EOF'
+            server {
+                listen 80;
+                root /var/www/lemp-stack/wordpress/public_html;
+                index index.php index.html index.htm;
+                server_name lamp-stack.ddns.net;
+
+                location / {
+                    try_files $uri $uri/ /index.php?$args;
+                }
+
+                location ~ \.php$ {
+                    include snippets/fastcgi-php.conf;
+                    fastcgi_pass unix:/var/run/php/php-fpm.sock;
+                }
+
+                location ~ /\.ht {
+                    deny all;
+                }
+
+                location = /favicon.ico {
+                    log_not_found off;
+                    access_log off;
+                }
+
+                location = /robots.txt {
+                    log_not_found off;
+                    access_log off;
+                    allow all;
+                }
+
+                location ~* \.(css|gif|ico|jpeg|jpg|js|png)$ {
+                    expires max;
+                    log_not_found off;
+                }
+            }
+            EOF
+
+            # Enable the site and remove default
+            sudo rm -f /etc/nginx/sites-enabled/default
+            sudo ln -sf /etc/nginx/sites-available/wordpress /etc/nginx/sites-enabled/
+
+            # Test Nginx configuration
+            sudo nginx -t
+
+            # Restart services
+            sudo systemctl restart php-fpm
+            sudo systemctl restart nginx
+          ENDSSH
+
+      - name: Verify deployment
+        run: |
+          curl -I http://${{ secrets.EC2_IP }}

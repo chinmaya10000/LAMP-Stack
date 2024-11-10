@@ -323,74 +323,191 @@ sudo certbot --nginx -d your_domain.com
 ```
 
 
-### 8.Test
+### 8. open a browser and go to:
 ```
 https://lamp-stack.ddns.net
 ```
 
-# GitHub Actions Workflow
-This workflow is designed to be super-easy to integrate into your own WordPress project or any other PHP-based project. It’s designed to ensure code quality and deploy changes to both staging and production environments from the master branch.
+# WordPress EC2 Deployment with GitHub Actions
+This repository contains automation for deploying a WordPress website using LEMP stack (Linux, Nginx, MySQL, PHP) on AWS EC2.
 
-## Steps
+# WordPress LEMP Stack Deployment
 
-### 1. Create a GitHub repository
-- Go to repository >> Settings >>Actions secrets and variables >> add below secrets
-```
-HOST: The hostname or IP address of the production server.
-USERNANE: ubuntu
-SSH_PRIVATE_KEY : private key of your server
-```
+This repository contains automation for deploying a WordPress website using LEMP stack (Linux, Nginx, MySQL, PHP) on AWS EC2.
 
-### 2. GitHub Actions Workflow
-- clikc on actions button on our git repo, click on set up a workflow yourself button. create a `main.yaml` file
-- this deployment file i am trying to build themes by installing dependacies and building then after that i am syncing the directory with rsync utility to sych with my wordpress site location files and send securly.
+## Prerequisites
+
+- AWS EC2 instance running Ubuntu
+- GitHub account
+- MySQL database (setup instructions below)
+- Domain name (optional)
+
+## Initial Server Setup
+
+Before running the GitHub Actions workflow, you need to set up your database. SSH into your EC2 instance and follow these steps:
+
+1. Install MySQL:
+   ```bash
+   sudo apt update
+   sudo apt install mysql-server
+sudo mysql_secure_installation
+sudo mysql
+CREATE DATABASE wordpress;
+CREATE USER 'wordpressuser'@'localhost' IDENTIFIED BY 'your_strong_password';
+GRANT ALL PRIVILEGES ON wordpress.* TO 'wordpressuser'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+
+
+
+
+### 2. GitHub Actions Setup
+- Go to your repository Settings > Secrets and Variables > Actions
+- Add the following secrets:
 ```
-name: Push Code to EC2
+EC2_SSH_KEY: Your EC2 instance's private SSH key
+EC2_IP: Your EC2 instance's public IP address
+DB_NAME: WordPress database name (e.g., wordpress)
+DB_USER: Database username (e.g., wordpressuser)
+DB_PASSWORD: Database password (the one you set during database creation)
+DB_HOST: Database host (use 'localhost' if database is on the same server)
+
+
+And here's the updated workflow file (.github/workflows/main.yml):
+
+```yaml
+name: Deploy WordPress LEMP Stack
 
 on:
- push:
-   branches:
-     - master
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
 jobs:
- push_to_ec2:
-   runs-on: ubuntu-latest
-   steps:
-     - name: Checkout Repository
-       uses: actions/checkout@v2
-     - name: Set up SSH
-       uses: webfactory/ssh-agent@v0.8.0
-       with:
-         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-     - name: Install dependencies
-       run: |
-         # Add your commands to install project dependencies
-         # For example, if you are using Node.js:
-         # npm install
-     - name: Build the project
-       run: |
-         # Add your commands to build the project
-         # For example, if you are using Node.js:
-         # npm run build
-     - name: Install rsync
-       run: sudo apt-get update && sudo apt-get install -y rsync
-     - name: Add EC2 instance host key to known hosts
-       run: |
-         ssh-keyscan -H $HOST >> $HOME/.ssh/known_hosts
-       env:
-         HOST: ${{ secrets.HOST }}
-     - name: Push code to EC2
-       run: |
-         # Set IP address and directory paths
-         EC2_IP="$HOST"
-         SOURCE_DIR="$GITHUB_WORKSPACE/"
-         DEST_DIR="/var/www/lemp-stack/wordpress/"
-         # Use rsync with SSH key authentication and compression
-         rsync -avz --delete-after --exclude='.git' -e "ssh -i $SSH_AUTH_SOCK" "$SOURCE_DIR" "${{ secrets.USERNAME }}@$EC2_IP:$DEST_DIR"
-       env:
-         HOST: ${{ secrets.HOST }}
-         USERNAME: ${{ secrets.USERNAME }}
-         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-```
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Add EC2 to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.EC2_IP }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to EC2
+        env:
+          EC2_IP: ${{ secrets.EC2_IP }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+        run: |
+          ssh ubuntu@$EC2_IP << 'ENDSSH'
+            # Update system packages
+            sudo apt update
+            sudo apt install -y nginx php-fpm php-mysql php-curl php-gd php-intl php-mbstring php-soap php-xml php-xmlrpc php-zip
+
+            # Create web root directory if it doesn't exist
+            sudo mkdir -p /var/www/html
+
+            # Download and setup WordPress
+            cd /var/www/html
+            if [ ! -d wordpress ]; then
+              sudo wget https://wordpress.org/latest.tar.gz
+              sudo tar -xzf latest.tar.gz
+              sudo rm latest.tar.gz
+            fi
+
+            # Configure wp-config.php
+            cd wordpress
+            if [ ! -f wp-config.php ]; then
+              sudo cp wp-config-sample.php wp-config.php
+              sudo sed -i "s/database_name_here/${DB_NAME}/" wp-config.php
+              sudo sed -i "s/username_here/${DB_USER}/" wp-config.php
+              sudo sed -i "s/password_here/${DB_PASSWORD}/" wp-config.php
+              sudo sed -i "s/localhost/${DB_HOST}/" wp-config.php
+              
+              # Add WordPress salts
+              SALTS=$(curl -s https://api.wordpress.org/secret-key/1.1/salt/)
+              sudo sed -i "/#@-/,/#@+/c\\$SALTS" wp-config.php
+
+              # Add extra security configurations
+              echo "define('DISALLOW_FILE_EDIT', true);" >> wp-config.php
+              echo "define('WP_AUTO_UPDATE_CORE', true);" >> wp-config.php
+            fi
+
+            # Set correct permissions
+            sudo chown -R www-data:www-data /var/www/html/wordpress
+            sudo find /var/www/html/wordpress -type d -exec chmod 755 {} \;
+            sudo find /var/www/html/wordpress -type f -exec chmod 644 {} \;
+
+            # Configure Nginx
+            sudo tee /etc/nginx/sites-available/wordpress << 'EOF'
+            server {
+                listen 80;
+                root /var/www/html/wordpress;
+                index index.php index.html index.htm;
+                server_name _;
+
+                # Security headers
+                add_header X-Frame-Options "SAMEORIGIN" always;
+                add_header X-XSS-Protection "1; mode=block" always;
+                add_header X-Content-Type-Options "nosniff" always;
+
+                location / {
+                    try_files $uri $uri/ /index.php?$args;
+                }
+
+                location ~ \.php$ {
+                    include snippets/fastcgi-php.conf;
+                    fastcgi_pass unix:/var/run/php/php-fpm.sock;
+                    fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                    include fastcgi_params;
+                }
+
+                location ~ /\.ht {
+                    deny all;
+                }
+
+                # Media: images, icons, video, audio, HTC
+                location ~* \.(?:jpg|jpeg|gif|png|ico|cur|gz|svg|mp4|ogg|ogv|webm|htc)$ {
+                    expires 1M;
+                    access_log off;
+                    add_header Cache-Control "public";
+                }
+
+                # CSS and Javascript
+                location ~* \.(?:css|js)$ {
+                    expires 1y;
+                    access_log off;
+                    add_header Cache-Control "public";
+                }
+            }
+            EOF
+
+            # Enable the site and remove default
+            sudo rm -f /etc/nginx/sites-enabled/default
+            sudo ln -sf /etc/nginx/sites-available/wordpress /etc/nginx/sites-enabled/
+
+            # Test Nginx configuration
+            sudo nginx -t
+
+            # Restart services
+            sudo systemctl restart php-fpm
+            sudo systemctl restart nginx
+          ENDSSH
+
+      - name: Verify deployment
+        run: |
+          curl -I http://${{ secrets.EC2_IP }}
 
 ### Additional Security and Best Practices
 - Use strong passwords for all services
