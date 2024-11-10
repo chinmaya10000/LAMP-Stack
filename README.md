@@ -380,7 +380,7 @@ DB_HOST: Database host (use 'localhost' if database is on the same server)
 
 And here's the updated workflow file (.github/workflows/main.yml):
 
-```yaml
+```
 name: Deploy WordPress LEMP Stack
 
 on:
@@ -513,6 +513,9 @@ jobs:
       - name: Verify deployment
         run: |
           curl -I http://${{ secrets.EC2_IP }}
+```
+## Using your domain name (if configured):
+https://lamp-stack.ddns.net
 
 
 ## Additional Security and Best Practices
