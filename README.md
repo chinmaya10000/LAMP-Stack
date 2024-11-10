@@ -340,31 +340,33 @@ This repository contains automation for deploying a WordPress website using LEMP
 - AWS EC2 instance running Ubuntu
 - GitHub account
 - MySQL database (setup instructions below)
-- Domain name (optional)
+- Domain name 
 
 ## Initial Server Setup
 
 Before running the GitHub Actions workflow, you need to set up your database. SSH into your EC2 instance and follow these steps:
 
 1. Install MySQL:
-   ```bash
+ ```bash
    sudo apt update
    sudo apt install mysql-server
-sudo mysql_secure_installation
-sudo mysql
-CREATE DATABASE wordpress;
-CREATE USER 'wordpressuser'@'localhost' IDENTIFIED BY 'your_strong_password';
-GRANT ALL PRIVILEGES ON wordpress.* TO 'wordpressuser'@'localhost';
-FLUSH PRIVILEGES;
-EXIT;
-
-
+3. Secure MySQL installation:
+```bash
+   sudo mysql_secure_installation
+4. Create WordPress database and user:
+```bash
+   sudo mysql
+   CREATE DATABASE wordpress_db;
+   CREATE USER 'wordpress_user'@'localhost' IDENTIFIED 'Lemp@321';
+   GRANT ALL PRIVILEGES ON wordpress_db.* TO 'wordpress_user'@'localhost';
+   FLUSH PRIVILEGES;
+   EXIT;
 
 
 ### 2. GitHub Actions Setup
 - Go to your repository Settings > Secrets and Variables > Actions
 - Add the following secrets:
-```
+```bash
 EC2_SSH_KEY: Your EC2 instance's private SSH key
 EC2_IP: Your EC2 instance's public IP address
 DB_NAME: WordPress database name (e.g., wordpress)
@@ -416,10 +418,10 @@ jobs:
             sudo apt install -y nginx php-fpm php-mysql php-curl php-gd php-intl php-mbstring php-soap php-xml php-xmlrpc php-zip
 
             # Create web root directory if it doesn't exist
-            sudo mkdir -p /var/www/html
+            sudo mkdir -p /var/www/lemp-stack/wordpress/public_html
 
             # Download and setup WordPress
-            cd /var/www/html
+            cd /var/www/lemp-stack/wordpress/public_html
             if [ ! -d wordpress ]; then
               sudo wget https://wordpress.org/latest.tar.gz
               sudo tar -xzf latest.tar.gz
@@ -445,17 +447,17 @@ jobs:
             fi
 
             # Set correct permissions
-            sudo chown -R www-data:www-data /var/www/html/wordpress
-            sudo find /var/www/html/wordpress -type d -exec chmod 755 {} \;
-            sudo find /var/www/html/wordpress -type f -exec chmod 644 {} \;
+            sudo chown -R www-data:www-data /var/www/
+            sudo find /var/www/ -type d -exec chmod 755 {} \;
+            sudo find /var/www/ -type f -exec chmod 644 {} \;
 
             # Configure Nginx
-            sudo tee /etc/nginx/sites-available/wordpress << 'EOF'
+            sudo tee /etc/nginx/sites-available/lemp-stack << 'EOF'
             server {
                 listen 80;
-                root /var/www/html/wordpress;
+                root /var/www/lemp-stack/wordpress/public_html;
                 index index.php index.html index.htm;
-                server_name _;
+                server_name lamp-stack.ddns.net;
 
                 # Security headers
                 add_header X-Frame-Options "SAMEORIGIN" always;
@@ -495,7 +497,7 @@ jobs:
 
             # Enable the site and remove default
             sudo rm -f /etc/nginx/sites-enabled/default
-            sudo ln -sf /etc/nginx/sites-available/wordpress /etc/nginx/sites-enabled/
+            sudo ln -sf /etc/nginx/sites-available/lemp-stack /etc/nginx/sites-enabled/
 
             # Test Nginx configuration
             sudo nginx -t
@@ -508,6 +510,7 @@ jobs:
       - name: Verify deployment
         run: |
           curl -I http://${{ secrets.EC2_IP }}
+
 
 ### Additional Security and Best Practices
 - Use strong passwords for all services
