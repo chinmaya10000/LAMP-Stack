@@ -346,24 +346,27 @@ This repository contains automation for deploying a WordPress website using LEMP
 
 Before running the GitHub Actions workflow, you need to set up your database. SSH into your EC2 instance and follow these steps:
 
-1. Install MySQL:
- ```bash
-   sudo apt update
-   sudo apt install mysql-server
-3. Secure MySQL installation:
-```bash
+### 1. Install MySQL:
+```
+   sudo apt-get update
+   sudo apt install mysql-server -y
+```
+### 3. Secure MySQL installation:
+```
    sudo mysql_secure_installation
-4. Create WordPress database and user:
-```bash
+```
+### 4. Create WordPress database and user:
+```
    sudo mysql
    CREATE DATABASE wordpress_db;
-   CREATE USER 'wordpress_user'@'localhost' IDENTIFIED 'Lemp@321';
+   CREATE USER 'wordpress_user'@'localhost' IDENTIFIED BY 'Lemp@321';
    GRANT ALL PRIVILEGES ON wordpress_db.* TO 'wordpress_user'@'localhost';
    FLUSH PRIVILEGES;
    EXIT;
+```
 
 
-### 2. GitHub Actions Setup
+## GitHub Actions Setup
 - Go to your repository Settings > Secrets and Variables > Actions
 - Add the following secrets:
 ```bash
