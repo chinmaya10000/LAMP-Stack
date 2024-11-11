@@ -77,7 +77,7 @@ jobs:
 
                 root /var/www/lemp-stack/wordpress/public_html;
                 index index.php index.html index.htm;
-                server_name lamp-stack.ddns.net;
+                server_name lemp-stack.zapto.org;
 
                 client_max_body_size 0;
 
