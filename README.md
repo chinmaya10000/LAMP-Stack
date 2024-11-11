@@ -262,7 +262,7 @@ http://lamp-stack.ddns.net
 ```
 - We can do this by creating a test PHP file in your document root.
 ```
-sudo vim /var/www/lemp-stack/wordpress/public_html
+sudo vim /var/www/lemp-stack/wordpress/public_html/info.php
 ```
 - Add the following lines into the new file.
 ```
