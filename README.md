@@ -81,7 +81,7 @@ server {
   root /var/www/lemp-stack/wordpress/public_html;
   index index.php index.html index.htm;
 
-  server_name  lamp-stack.ddns.net www.lamp-stack.ddns.net;
+  server_name  lemp-stack.zapto.org www.lemp-stack.zapto.org;
   client_max_body_size 0;
 
  error_page 401 403 404 /404.html;
@@ -325,7 +325,7 @@ sudo certbot --nginx -d your_domain.com
 
 ### 8. open a browser and go to:
 ```
-https://lamp-stack.ddns.net
+https://lemp-stack.zapto.org
 ```
 
 # WordPress EC2 Deployment with GitHub Actions
@@ -515,7 +515,7 @@ jobs:
           curl -I http://${{ secrets.EC2_IP }}
 ```
 ## Using your domain name (if configured):
-https://lamp-stack.ddns.net
+https://lemp-stack.zapto.org
 
 
 ## Additional Security and Best Practices
