@@ -258,7 +258,7 @@ sudo vim /var/www/lemp-stack/wordpress/public_html/index.html
 ```
 - test
 ```
-http://lamp-stack.ddns.net
+http://lemp-stack.zapto.org
 ```
 - We can do this by creating a test PHP file in your document root.
 ```
@@ -271,7 +271,7 @@ phpinfo();
 ```
 - Test 
 ```
-http://lamp-stack.ddns.net/info.php
+http://lemp-stack.zapto.org/info.php
 ```
 
 ## 5. Install and configure mysqldb
@@ -460,7 +460,7 @@ jobs:
                 listen 80;
                 root /var/www/lemp-stack/wordpress/public_html;
                 index index.php index.html index.htm;
-                server_name lamp-stack.ddns.net;
+                server_name lemp-stack.zapto.org;
 
                 # Security headers
                 add_header X-Frame-Options "SAMEORIGIN" always;
